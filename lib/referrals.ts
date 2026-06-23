@@ -35,14 +35,19 @@ export function clearReferralSecret() {
   sessionStorage.removeItem(REFERRAL_SECRET_KEY)
 }
 
-export function buildAppPath(path: string, params?: Record<string, string>) {
-  const origin =
-    process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "") ??
-    (typeof window !== "undefined" ? window.location.origin.replace(/\/$/, "") : "")
-  if (!origin) {
-    throw new Error("NEXT_PUBLIC_APP_URL is required to build app links.")
+export function getAppOrigin() {
+  if (typeof window !== "undefined") {
+    return window.location.origin.replace(/\/$/, "")
   }
-  const url = new URL(path.replace(/^\//, ""), `${origin.replace(/\/$/, "")}/`)
+  return process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "") ?? ""
+}
+
+export function buildAppPath(path: string, params?: Record<string, string>) {
+  const origin = getAppOrigin()
+  if (!origin) {
+    throw new Error("Could not determine app origin for link.")
+  }
+  const url = new URL(path.replace(/^\//, ""), `${origin}/`)
   if (params) {
     for (const [key, value] of Object.entries(params)) {
       url.searchParams.set(key, value)
