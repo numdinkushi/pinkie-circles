@@ -47,19 +47,35 @@ export function HomePage() {
       ) : null}
 
       {!isConnected ? (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Connect to make a promise</CardTitle>
-            <CardDescription>
-              {isMiniappHost
-                ? "Your Circles wallet stays in the host — we never ask for keys."
-                : "Open Pinkie inside the Circles app to connect your wallet."}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <CreateAccountButton />
-          </CardContent>
-        </Card>
+        isMiniappHost ? (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Connect to make a promise</CardTitle>
+              <CardDescription>
+                Your Circles wallet stays in the host — we never ask for keys.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <CreateAccountButton />
+            </CardContent>
+          </Card>
+        ) : (
+          <Card className="border-pink-200/60 bg-gradient-to-br from-pink-50/80 to-violet-50/60">
+            <CardHeader>
+              <CardTitle className="text-base">Open Pinkie in Circles</CardTitle>
+              <CardDescription>
+                Connect your wallet in the Circles Playground — then make promises, surprises, and
+                send CRC thanks.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <CreateAccountButton label="Open in Circles Playground" />
+              <p className="text-center text-[11px] text-violet-700/60">
+                You&apos;re on the web preview. Pinkie runs fully inside Circles.
+              </p>
+            </CardContent>
+          </Card>
+        )
       ) : (
         <PromiseForm makerAddress={address!} />
       )}
