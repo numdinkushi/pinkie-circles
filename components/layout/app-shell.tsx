@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { BookMarked, HeartHandshake, Home, Sparkles, Trophy, UserRound } from "lucide-react"
+import { BookMarked, ArrowLeftRight, HeartHandshake, Home, Sparkles, Trophy, UserRound } from "lucide-react"
 
 import { HeaderWalletChip } from "@/components/layout/header-wallet-chip"
 import { CreateAccountButton } from "@/components/wallet/create-account-button"
@@ -12,6 +12,7 @@ import { cn } from "@/lib/utils"
 const NAV = [
   { href: "/", label: "Home", shortLabel: "Home", icon: Home },
   { href: "/record", label: "Record", shortLabel: "Record", icon: BookMarked },
+  { href: "/transactions", label: "Transactions", shortLabel: "Tips", icon: ArrowLeftRight },
   { href: "/circle", label: "Circle", shortLabel: "Circle", icon: HeartHandshake },
   { href: "/high-fives", label: "High Fives", shortLabel: "Fives", icon: Trophy },
   { href: "/profile", label: "Profile", shortLabel: "You", icon: UserRound },

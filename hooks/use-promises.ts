@@ -13,9 +13,11 @@ export type PromiseRecord = {
   witnessAcceptedAt?: number
   text: string
   dueAt: number
-  status: "open" | "done"
+  status: "open" | "done" | "acknowledged"
   confirmedBy?: string
   completedAt?: number
+  acknowledgmentFeedback?: string
+  editedAt?: number
   createdAt: number
   updatedAt: number
 }
@@ -68,7 +70,8 @@ export function usePromiseMutations() {
   const create = useMutation(api.promises.create)
   const assignWitness = useMutation(api.promises.assignWitness)
   const markDone = useMutation(api.promises.markDone)
-  return { create, assignWitness, markDone }
+  const edit = useMutation(api.promises.edit)
+  return { create, assignWitness, markDone, edit }
 }
 
 export function useThanksMutations() {

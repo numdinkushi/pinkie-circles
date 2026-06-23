@@ -2,6 +2,10 @@ import { v } from "convex/values"
 
 import { mutation, query } from "./_generated/server"
 
+function isClosedStatus(status: "open" | "done" | "acknowledged") {
+  return status === "done" || status === "acknowledged"
+}
+
 function normalizeAddress(address: string) {
   return address.toLowerCase()
 }
@@ -53,7 +57,7 @@ export const getHighFives = query({
     const tipped = new Map<string, number>()
 
     for (const row of promises) {
-      if (row.status !== "done" || !row.witnessAddress) continue
+      if (!isClosedStatus(row.status) || !row.witnessAddress) continue
       const involvesMe = row.makerAddress === me || row.witnessAddress === me
       if (!involvesMe) continue
 
@@ -87,7 +91,7 @@ export const getHighFives = query({
       held: toRows(held),
       tipped: toRows(tipped),
       myStats: {
-        kept: promises.filter((p) => p.makerAddress === me && p.status === "done").length,
+        kept: promises.filter((p) => p.makerAddress === me && isClosedStatus(p.status)).length,
         held: promises.filter(
           (p) => p.witnessAddress === me && p.confirmedBy === me,
         ).length,

@@ -4,6 +4,7 @@ import { PromiseCard } from "@/components/promises/promise-card"
 import { CreateAccountButton } from "@/components/wallet/create-account-button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { useMyPromises } from "@/hooks/use-promises"
+import { isClosedStatus } from "@/lib/promises/kind"
 import { useWallet } from "@/components/wallet/wallet-provider"
 
 export function MinePage() {
@@ -25,7 +26,7 @@ export function MinePage() {
   }
 
   const open = promises?.filter((p) => p.status === "open") ?? []
-  const done = promises?.filter((p) => p.status === "done") ?? []
+  const done = promises?.filter((p) => isClosedStatus(p.status)) ?? []
 
   return (
     <div className="space-y-6">
@@ -48,7 +49,7 @@ export function MinePage() {
             <section className="space-y-3">
               <h2 className="text-sm font-medium">Open ({open.length})</h2>
               {open.map((promise) => (
-                <PromiseCard key={promise.slug} promise={promise} />
+                <PromiseCard key={promise.slug} promise={promise} from="mine" />
               ))}
             </section>
           ) : null}
@@ -56,7 +57,7 @@ export function MinePage() {
             <section className="space-y-3">
               <h2 className="text-sm font-medium">Done ({done.length})</h2>
               {done.map((promise) => (
-                <PromiseCard key={promise.slug} promise={promise} />
+                <PromiseCard key={promise.slug} promise={promise} from="mine" />
               ))}
             </section>
           ) : null}

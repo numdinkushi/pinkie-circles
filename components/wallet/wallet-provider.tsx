@@ -1,6 +1,6 @@
 "use client"
 
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react"
+import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react"
 
 import {
   clearReferralSecret,
@@ -17,6 +17,8 @@ type WalletContextValue = {
   isMiniappHost: boolean
   referralSecret: string | null
   referralInviter: string | null
+  /** Apply address from requestCreateAccount() when the host SDK lags behind. */
+  syncAddress: (address: string | null) => void
 }
 
 const WalletContext = createContext<WalletContextValue>({
@@ -25,6 +27,7 @@ const WalletContext = createContext<WalletContextValue>({
   isMiniappHost: false,
   referralSecret: null,
   referralInviter: null,
+  syncAddress: () => {},
 })
 
 function parseHostReferralData(raw: string): string | null {
@@ -42,6 +45,14 @@ export function WalletProvider({ children }: { children: ReactNode }) {
   const [isMiniappHost, setIsMiniappHost] = useState(false)
   const [referralSecret, setReferralSecret] = useState<string | null>(null)
   const [referralInviter, setReferralInviter] = useState<string | null>(null)
+
+  const syncAddress = useCallback((next: string | null) => {
+    setAddress(next)
+    if (next) {
+      clearReferralSecret()
+      setReferralSecret(null)
+    }
+  }, [])
 
   useEffect(() => {
     const secret = readReferralSecretFromUrl() ?? getStoredReferralSecret()
@@ -79,8 +90,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
         })
 
         unsubscribe = onWalletChange((next) => {
-          setAddress(next ?? null)
-          if (next) clearReferralSecret()
+          syncAddress(next ?? null)
         })
       })
       .catch((error) => {
@@ -91,7 +101,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       cancelled = true
       unsubscribe?.()
     }
-  }, [])
+  }, [syncAddress])
 
   return (
     <WalletContext.Provider
@@ -101,6 +111,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
         isMiniappHost,
         referralSecret,
         referralInviter,
+        syncAddress,
       }}
     >
       {children}

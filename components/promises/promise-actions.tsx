@@ -1,12 +1,14 @@
 "use client"
 
 import { useState } from "react"
-import { Check, Copy, Heart, LoaderCircle, Share2 } from "lucide-react"
+import { Check, Copy, Heart, LoaderCircle, Pencil, Share2 } from "lucide-react"
 import { toast } from "sonner"
 
 import { CreateAccountButton } from "@/components/wallet/create-account-button"
 import { Button } from "@/components/ui/button"
-import { usePromiseMutations, useThanksMutations, type PromiseRecord } from "@/hooks/use-promises"
+import { Textarea } from "@/components/ui/textarea"
+import { usePromiseMutations, type PromiseRecord } from "@/hooks/use-promises"
+import { useTransactionMutations } from "@/hooks/use-transactions"
 import { useWallet } from "@/components/wallet/wallet-provider"
 import { sendThanks } from "@/lib/circles"
 import {
@@ -22,6 +24,8 @@ type PromiseActionsProps = {
   witnessAddress?: string
   status: PromiseRecord["status"]
   kind?: PromiseRecord["kind"]
+  canEdit?: boolean
+  onEdit?: () => void
 }
 
 export function PromiseActions({
@@ -30,13 +34,16 @@ export function PromiseActions({
   witnessAddress,
   status,
   kind: kindProp,
+  canEdit = false,
+  onEdit,
 }: PromiseActionsProps) {
   const { address, isConnected, isMiniappHost } = useWallet()
   const { markDone } = usePromiseMutations()
-  const { recordThanks } = useThanksMutations()
+  const { recordThanks } = useTransactionMutations()
   const [confirming, setConfirming] = useState(false)
   const [sharing, setSharing] = useState(false)
   const [thanking, setThanking] = useState(false)
+  const [feedback, setFeedback] = useState("")
 
   const kind = getPinkieKind({ kind: kindProp })
   const surprise = isSurprise({ kind: kindProp })
@@ -50,14 +57,9 @@ export function PromiseActions({
     (surprise ? isMaker : hasWitness && (isMaker || isWitness))
   const surpriseReadyToShare = surprise && status === "done" && !hasWitness && isMaker
 
-  const thanksTarget =
-    status === "done" && address
-      ? isMaker && witnessAddress
-        ? witnessAddress
-        : isWitness
-          ? makerAddress
-          : null
-      : null
+  const canSendThanks =
+    status === "done" && isWitness && !!witnessAddress && address?.toLowerCase() !== makerAddress.toLowerCase()
+  const thanksTarget = canSendThanks ? makerAddress : null
 
   async function handleConfirm(asMaker: boolean) {
     if (!address) return
@@ -101,14 +103,16 @@ export function PromiseActions({
     if (!address || !thanksTarget) return
     setThanking(true)
     try {
-      await sendThanks({ from: address, to: thanksTarget, slug })
+      const txHashes = await sendThanks({ from: address, to: thanksTarget, slug })
       await recordThanks({
         fromAddress: address,
         toAddress: thanksTarget,
         promiseSlug: slug,
         amountCrc: 1,
+        feedback: feedback.trim() || undefined,
+        txHashes,
       })
-      toast.success("1 CRC thanks sent")
+      toast.success("Acknowledged with 1 CRC thanks")
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Could not send thanks")
     } finally {
@@ -186,6 +190,12 @@ export function PromiseActions({
                     : "Copy link"}
               </Button>
             )}
+            {canEdit && onEdit ? (
+              <Button variant="outline" onClick={onEdit}>
+                <Pencil />
+                Edit
+              </Button>
+            ) : null}
           </div>
         </div>
       ) : (
@@ -195,17 +205,38 @@ export function PromiseActions({
               Share the link — the first friend to open will discover your surprise.
             </p>
           ) : null}
-          <div className="grid gap-2 sm:grid-cols-2">
-            {thanksTarget ? (
-              <Button onClick={handleThanks} disabled={thanking}>
+          {status === "acknowledged" && isWitness ? (
+            <p className="rounded-xl border border-pink-200/70 bg-pink-50/60 px-3 py-2.5 text-xs text-violet-900/80">
+              You acknowledged this with thanks.
+            </p>
+          ) : null}
+          {canSendThanks ? (
+            <div className="space-y-2">
+              <Textarea
+                value={feedback}
+                onChange={(event) => setFeedback(event.target.value)}
+                placeholder="Leave a note (optional)"
+                rows={2}
+                className="border-pink-200/70 bg-white/80 text-sm"
+              />
+              <Button onClick={handleThanks} disabled={thanking} className="w-full sm:w-auto">
                 {thanking ? <LoaderCircle className="animate-spin" /> : <Heart />}
                 Send 1 CRC thanks
+              </Button>
+            </div>
+          ) : null}
+          <div className="grid gap-2 sm:grid-cols-2">
+            {canEdit && onEdit ? (
+              <Button variant="outline" onClick={onEdit}>
+                <Pencil />
+                Edit
               </Button>
             ) : null}
             <Button
               variant={surpriseReadyToShare ? "default" : "outline"}
               onClick={handleShare}
               disabled={sharing}
+              className={canSendThanks ? "sm:col-span-2" : undefined}
             >
               {sharing ? <LoaderCircle className="animate-spin" /> : <Copy />}
               {surpriseReadyToShare ? "Copy surprise link" : "Copy link"}

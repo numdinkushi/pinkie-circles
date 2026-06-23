@@ -1,6 +1,13 @@
 "use client"
 
+import { useState } from "react"
+
+import { PromiseDetailBackButton } from "@/components/promises/promise-detail-back-button"
+
 import { PromiseActions } from "@/components/promises/promise-actions"
+import { PromiseEditForm } from "@/components/promises/promise-edit-form"
+import { PromiseEditedLabel } from "@/components/promises/promise-edited-label"
+import { PromiseTipBadges } from "@/components/promises/promise-tip-badges"
 import { PromiseStatusBadge } from "@/components/promises/promise-status-badge"
 import { ProfileAvatar } from "@/components/profile/profile-avatar"
 import { Badge } from "@/components/ui/badge"
@@ -9,7 +16,12 @@ import { useAssignWitness } from "@/hooks/use-assign-witness"
 import { useProfilesByAddresses } from "@/hooks/use-profile"
 import { usePromiseBySlug } from "@/hooks/use-promises"
 import { useWallet } from "@/components/wallet/wallet-provider"
-import { promiseRoleLabel, witnessStatusLabel, makerMetaLabel } from "@/lib/circle/display"
+import {
+  promiseRoleLabel,
+  witnessStatusLabel,
+  makerMetaLabel,
+  witnessMetaLabel,
+} from "@/lib/circle/display"
 import { formatDueDate } from "@/lib/promises/dates"
 import {
   getPinkieKind,
@@ -20,15 +32,19 @@ import {
   kindTitle,
 } from "@/lib/promises/kind"
 import { shortenAddress } from "@/lib/referrals"
+import { canEditBeforeShare, wasEdited } from "@/lib/promises/edit"
 
 type PromiseDetailPageProps = {
   slug: string
+  from?: string | null
+  circleAddress?: string | null
 }
 
-export function PromiseDetailPage({ slug }: PromiseDetailPageProps) {
+export function PromiseDetailPage({ slug, from, circleAddress }: PromiseDetailPageProps) {
   const { address, isConnected } = useWallet()
   const promise = usePromiseBySlug(slug)
   useAssignWitness(slug)
+  const [editing, setEditing] = useState(false)
 
   const profileAddresses = promise
     ? [promise.makerAddress, ...(promise.witnessAddress ? [promise.witnessAddress] : [])]
@@ -43,11 +59,14 @@ export function PromiseDetailPage({ slug }: PromiseDetailPageProps) {
 
   if (!promise) {
     return (
-      <Card>
-        <CardContent className="py-10 text-center text-sm text-violet-800/70">
-          Promise not found. Check the link and try again.
-        </CardContent>
-      </Card>
+      <div className="space-y-4">
+        <PromiseDetailBackButton from={from} circleAddress={circleAddress} />
+        <Card>
+          <CardContent className="py-10 text-center text-sm text-violet-800/70">
+            Promise not found. Check the link and try again.
+          </CardContent>
+        </Card>
+      </div>
     )
   }
 
@@ -57,13 +76,17 @@ export function PromiseDetailPage({ slug }: PromiseDetailPageProps) {
   const roleLabel =
     isConnected && address ? promiseRoleLabel(promise, address) : kindTitle(kind)
   const waitingLabel = isMaker ? witnessStatusLabel(promise, true) : null
+  const makerLabel = maker?.displayName ?? shortenAddress(promise.makerAddress)
   const makerMeta = makerMetaLabel(promise)
-  const witnessMeta = surprise ? "Discovered your surprise" : "Witness · holds them to it"
+  const witnessMeta = witnessMetaLabel(promise, makerLabel)
   const kindLabel = kindBadgeLabel(promise)
   const kindTone = kindBadgeTone(promise)
+  const canEdit = isMaker && canEditBeforeShare(promise, address)
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
+      <PromiseDetailBackButton from={from} circleAddress={circleAddress} />
+
       <Card>
         <CardHeader className="space-y-4">
           <div className="flex items-start justify-between gap-3">
@@ -76,7 +99,18 @@ export function PromiseDetailPage({ slug }: PromiseDetailPageProps) {
                   {kindLabel}
                 </Badge>
               </div>
-              <p className="text-xl font-medium leading-snug">{promise.text}</p>
+              {editing && canEdit && address ? (
+                <PromiseEditForm
+                  promise={promise}
+                  makerAddress={address}
+                  onDone={() => setEditing(false)}
+                />
+              ) : (
+                <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+                  <p className="text-xl font-medium leading-snug">{promise.text}</p>
+                  {wasEdited(promise) ? <PromiseEditedLabel /> : null}
+                </div>
+              )}
             </div>
             <PromiseStatusBadge status={promise.status} dueAt={promise.dueAt} />
           </div>
@@ -90,9 +124,7 @@ export function PromiseDetailPage({ slug }: PromiseDetailPageProps) {
                 size="sm"
               />
               <div>
-                <p className="font-medium">
-                  {maker?.displayName ?? shortenAddress(promise.makerAddress)}
-                </p>
+                <p className="font-medium">{makerLabel}</p>
                 <p className="text-violet-800/70">
                   {makerMeta} · {formatDueDate(promise.dueAt)}
                 </p>
@@ -120,6 +152,15 @@ export function PromiseDetailPage({ slug }: PromiseDetailPageProps) {
               </p>
             ) : null}
           </div>
+
+          <PromiseTipBadges promiseSlug={promise.slug} />
+
+          {promise.acknowledgmentFeedback ? (
+            <div className="rounded-xl border border-pink-200/60 bg-white/70 p-3 text-sm">
+              <p className="text-xs font-medium text-violet-700">Their note</p>
+              <p className="mt-1 text-violet-900/90">{promise.acknowledgmentFeedback}</p>
+            </div>
+          ) : null}
         </CardHeader>
         <CardContent>
           <PromiseActions
@@ -128,6 +169,8 @@ export function PromiseDetailPage({ slug }: PromiseDetailPageProps) {
             witnessAddress={promise.witnessAddress}
             status={promise.status}
             kind={kind}
+            canEdit={canEdit && !editing}
+            onEdit={() => setEditing(true)}
           />
         </CardContent>
       </Card>
