@@ -1,0 +1,26 @@
+Pinkie — circles/garage submission (copy/paste into garage.aboutcircles.com/register)
+
+Live URL
+https://pinkie-circles.vercel.app/
+
+Playground test link
+https://circles.gnosis.io/playground?url=https%3A%2F%2Fpinkie-circles.vercel.app%2F
+
+Repo
+https://github.com/numdinkushi/pinkie-circles
+
+One-liner
+Make a one-line promise to a friend — they witness it, you close the loop, optional CRC thanks. Circle + High Fives track who keeps their word.
+
+Circles integration
+- @aboutcircles/miniapp-sdk — wallet connect, account creation, CRC transfers
+- requestCreateAccount() + referral invite links when sharing promises
+- constructAdvancedTransfer() — optional 1 CRC thanks after a promise is kept
+- getProfileView() — profiles on promise cards
+- Runs in Circles playground + miniapps iframe host
+
+Note for reviewers
+No mic, no popups, no “open in browser” flows. Entire loop works inside the Circles iframe.
+
+Miniapps marketplace PR
+Submit entry from garage/miniapps-entry.json to aboutcircles/CirclesMiniapps static/miniapps.json

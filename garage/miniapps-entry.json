@@ -1,0 +1,9 @@
+{
+  "slug": "pinkie",
+  "name": "Pinkie",
+  "logo": "/app-logos/pinkie.svg",
+  "url": "https://pinkie-circles.vercel.app/",
+  "description": "Make a one-line promise, share it with a friend, and close the loop with optional CRC thanks on Circles.",
+  "tags": ["social", "circles", "promises"],
+  "category": "garage"
+}
