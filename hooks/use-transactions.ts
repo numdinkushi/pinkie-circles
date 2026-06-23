@@ -24,5 +24,6 @@ export function usePromiseTips(promiseSlug?: string | null, viewerAddress?: stri
 
 export function useTransactionMutations() {
   const recordThanks = useMutation(api.transactions.recordThanks)
-  return { recordThanks }
+  const recordTransfer = useMutation(api.transactions.recordTransfer)
+  return { recordThanks, recordTransfer }
 }

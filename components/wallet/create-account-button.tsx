@@ -45,6 +45,16 @@ export function CreateAccountButton({
       const result = await sdk.requestCreateAccount()
       if (result.address) {
         syncAddress(result.address)
+
+        const registerRes = await fetch("/api/account/register", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ account: result.address }),
+        })
+        const registerData = await registerRes.json().catch(() => ({}))
+        if (!registerRes.ok) {
+          throw new Error(registerData.error || "Could not finish Circles registration.")
+        }
       }
 
       const connectedAs = result.address ? shortenAddress(result.address) : null

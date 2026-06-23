@@ -45,10 +45,10 @@ export default defineSchema({
   transactions: defineTable({
     fromAddress: v.string(),
     toAddress: v.string(),
-    promiseSlug: v.string(),
-    promiseKind: v.union(v.literal("promise"), v.literal("surprise")),
+    promiseSlug: v.optional(v.string()),
+    promiseKind: v.optional(v.union(v.literal("promise"), v.literal("surprise"))),
     amountCrc: v.number(),
-    action: v.literal("thanks"),
+    action: v.union(v.literal("thanks"), v.literal("transfer")),
     feedback: v.optional(v.string()),
     txHashes: v.optional(v.array(v.string())),
     createdAt: v.number(),
