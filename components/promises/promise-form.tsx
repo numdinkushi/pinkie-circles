@@ -13,6 +13,7 @@ import { usePromiseMutations } from "@/hooks/use-promises"
 import type { PinkieKind } from "@/lib/promises/kind"
 import { defaultDueAt, dueAtFromDateInput, toDateInputValue } from "@/lib/promises/dates"
 import { createPromiseSlug } from "@/lib/promises/slug"
+import { promiseDetailPath } from "@/lib/navigation/detail-back"
 import { cn } from "@/lib/utils"
 
 type PromiseFormProps = {
@@ -68,7 +69,7 @@ export function PromiseForm({ makerAddress }: PromiseFormProps) {
         dueAt: dueAtFromDateInput(dueDate),
       })
       toast.success(isSurprise ? "Pinkie surprise created" : "Pinkie promise created")
-      router.push(`/p/${slug}`)
+      router.push(promiseDetailPath(slug, "home"))
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Could not create")
     } finally {

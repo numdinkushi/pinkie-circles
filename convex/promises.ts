@@ -249,7 +249,7 @@ export const markDone = mutation({
       .first()
 
     if (!promise) throw new Error("Promise not found.")
-    if (promise.status === "done") return promise._id
+    if (promise.status === "done" || promise.status === "acknowledged") return promise._id
 
     const kind = getKind(promise)
     const actor = normalizeAddress(args.actorAddress)
@@ -274,6 +274,49 @@ export const markDone = mutation({
       status: "done",
       confirmedBy: actor,
       completedAt: now,
+      updatedAt: now,
+    })
+
+    return promise._id
+  },
+})
+
+export const edit = mutation({
+  args: {
+    slug: v.string(),
+    actorAddress: v.string(),
+    text: v.string(),
+    dueAt: v.number(),
+  },
+  handler: async (ctx, args) => {
+    const promise = await ctx.db
+      .query("promises")
+      .withIndex("by_slug", (q) => q.eq("slug", args.slug))
+      .first()
+
+    if (!promise) throw new Error("Promise not found.")
+
+    const actor = normalizeAddress(args.actorAddress)
+    if (actor !== promise.makerAddress) {
+      throw new Error("Only the maker can edit this.")
+    }
+    if (promise.witnessAddress) {
+      throw new Error("Can't edit after the link has been shared.")
+    }
+    if (promise.status === "acknowledged") {
+      throw new Error("This is already acknowledged.")
+    }
+
+    const text = args.text.trim()
+    if (text.length < 4) {
+      throw new Error("Write a clear sentence — at least a few words.")
+    }
+
+    const now = Date.now()
+    await ctx.db.patch(promise._id, {
+      text,
+      dueAt: args.dueAt,
+      editedAt: now,
       updatedAt: now,
     })
 

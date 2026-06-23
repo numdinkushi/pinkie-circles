@@ -2,6 +2,12 @@ import type { PromiseRecord } from "@/hooks/use-promises"
 
 export type PinkieKind = "promise" | "surprise"
 
+export type PromiseStatus = "open" | "done" | "acknowledged"
+
+export function isClosedStatus(status: PromiseStatus) {
+  return status === "done" || status === "acknowledged"
+}
+
 /** Legacy Convex rows may still store "reveal". */
 export function getPinkieKind(record: { kind?: PinkieKind | "reveal" }): PinkieKind {
   const raw = record.kind ?? "promise"
@@ -33,14 +39,14 @@ export function kindBadgeLabel(promise: PromiseRecord) {
     return "Surprise"
   }
 
-  return promise.status === "done" ? "Kept" : "Promise"
+  return isClosedStatus(promise.status) ? "Kept" : "Promise"
 }
 
 export function kindBadgeTone(promise: PromiseRecord): "promise" | "kept" | "surprise" {
   const kind = getPinkieKind(promise)
 
   if (kind === "surprise") return "surprise"
-  if (promise.status === "done") return "kept"
+  if (isClosedStatus(promise.status)) return "kept"
   return "promise"
 }
 
@@ -52,7 +58,7 @@ export function cardCounterpartyLabel(promise: PromiseRecord) {
   }
 
   if (kind === "surprise") {
-    return promise.status === "done" ? "Waiting to surprise someone" : "Not shared yet"
+    return isClosedStatus(promise.status) ? "Waiting to surprise someone" : "Not shared yet"
   }
 
   return "Waiting for witness"
@@ -62,7 +68,7 @@ export function canAssignWitness(promise: PromiseRecord) {
   const kind = getPinkieKind(promise)
   if (promise.witnessAddress) return false
   if (kind === "promise") return promise.status === "open"
-  return promise.status === "done"
+  return isClosedStatus(promise.status)
 }
 
 export function kindBadgeClassName(tone: ReturnType<typeof kindBadgeTone>) {

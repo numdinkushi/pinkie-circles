@@ -7,6 +7,7 @@ import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { OpenInPlaygroundButton } from "@/components/wallet/open-in-playground-button"
 import { useWallet } from "@/components/wallet/wallet-provider"
+import { shortenAddress } from "@/lib/referrals"
 
 type MiniappSdk = typeof import("@aboutcircles/miniapp-sdk")
 
@@ -19,7 +20,7 @@ export function CreateAccountButton({
   referralLabel?: string
   compact?: boolean
 }) {
-  const { isConnected, isMiniappHost, referralSecret } = useWallet()
+  const { isConnected, isMiniappHost, referralSecret, syncAddress } = useWallet()
   const sdkRef = useRef<MiniappSdk | null>(null)
   const [ready, setReady] = useState(false)
   const [pending, setPending] = useState(false)
@@ -41,9 +42,24 @@ export function CreateAccountButton({
     if (!sdk) return
     setPending(true)
     try {
-      await sdk.requestCreateAccount()
+      const result = await sdk.requestCreateAccount()
+      if (result.address) {
+        syncAddress(result.address)
+      }
+
+      const connectedAs = result.address ? shortenAddress(result.address) : null
       if (referralSecret) {
-        toast.success("Welcome to Pinkie on Circles")
+        toast.success("Welcome to Pinkie on Circles", {
+          description: connectedAs
+            ? `Connected as ${connectedAs} — you can make and witness promises now.`
+            : "Your account is ready — you can make and witness promises now.",
+        })
+      } else {
+        toast.success("Circles account connected", {
+          description: connectedAs
+            ? `You're signed in as ${connectedAs}.`
+            : "You're ready to make promises.",
+        })
       }
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Account setup cancelled")

@@ -18,6 +18,7 @@
     "@aboutcircles/sdk": "^0.1.52",
     "@aboutcircles/sdk-core": "^0.1.52",
     "@aboutcircles/sdk-invitations": "^0.1.52",
+    "@aboutcircles/sdk-runner": "^0.1.52",
     "@aboutcircles/sdk-transfers": "^0.1.52",
     "@aboutcircles/sdk-utils": "^0.1.52",
     "class-variance-authority": "^0.7.1",

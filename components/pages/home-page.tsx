@@ -112,7 +112,7 @@ export function HomePage() {
           </div>
           <div className="flex flex-col gap-4">
             {recentOpen.map((promise) => (
-              <PromiseCard key={promise.slug} promise={promise} />
+              <PromiseCard key={promise.slug} promise={promise} from="home" />
             ))}
           </div>
         </section>

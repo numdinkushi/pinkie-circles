@@ -1,5 +1,9 @@
 import type { PromiseRecord } from "@/hooks/use-promises"
-import { getPinkieKind, isSurprise } from "@/lib/promises/kind"
+import { getPinkieKind, isClosedStatus, isSurprise } from "@/lib/promises/kind"
+
+export function isPromiseMaker(promise: PromiseRecord, viewerAddress: string) {
+  return promise.makerAddress === viewerAddress.toLowerCase()
+}
 
 export function getCounterpartyAddress(
   promise: PromiseRecord,
@@ -24,7 +28,7 @@ export function promiseRoleLabel(promise: PromiseRecord, viewerAddress: string) 
 
   if (promise.makerAddress === me) {
     if (kind === "surprise") return "Your surprise"
-    return promise.status === "done" ? "You kept it" : "You promised"
+    return isClosedStatus(promise.status) ? "You kept it" : "You promised"
   }
   if (promise.witnessAddress === me) {
     return kind === "surprise" ? "Surprised you" : "You're holding them to it"
@@ -43,7 +47,7 @@ export function witnessStatusLabel(promise: PromiseRecord, isMaker: boolean) {
     return "Share the link — first friend to open discovers your surprise"
   }
 
-  if (promise.status === "done") {
+  if (isClosedStatus(promise.status)) {
     return "Share the link — first friend to open can see you kept your word"
   }
 
@@ -53,5 +57,19 @@ export function witnessStatusLabel(promise: PromiseRecord, isMaker: boolean) {
 export function makerMetaLabel(promise: PromiseRecord) {
   const kind = getPinkieKind(promise)
   if (kind === "surprise") return "Did this"
-  return promise.status === "done" ? "Kept it" : "Promised"
+  return isClosedStatus(promise.status) ? "Kept it" : "Promised"
+}
+
+export function witnessMetaLabel(promise: PromiseRecord, makerLabel: string) {
+  const kind = getPinkieKind(promise)
+  const kindWord = kind === "surprise" ? "surprise" : "promise"
+  const possessive = `${makerLabel}'s ${kindWord}`
+
+  if (promise.status === "acknowledged") {
+    return `Acknowledged ${possessive}`
+  }
+  if (isClosedStatus(promise.status)) {
+    return `Kindly acknowledge ${possessive}`
+  }
+  return `Discover ${possessive}`
 }

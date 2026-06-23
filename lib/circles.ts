@@ -113,7 +113,7 @@ export async function sendThanks(input: {
     reference: `PINKIE-THANKS-${input.slug.toUpperCase()}`,
     maxTransfers: 4,
     label: "Send thanks",
-    description: `Send ${amountCrc} CRC thanks for keeping a pinkie promise`,
+    description: `Send ${amountCrc} CRC thanks in acknowledgement`,
   })
   return submitViaHost(txs)
 }

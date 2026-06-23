@@ -3,14 +3,14 @@
 import { useMemo } from "react"
 
 import { useAllMyPromises, type PromiseRecord } from "@/hooks/use-promises"
-import { getPinkieKind } from "@/lib/promises/kind"
+import { getPinkieKind, isClosedStatus } from "@/lib/promises/kind"
 
 export type RecordFilter = "all" | "open" | "kept" | "promise" | "surprise"
 
 function matchesFilter(item: PromiseRecord, filter: RecordFilter) {
   if (filter === "all") return true
   if (filter === "open") return item.status === "open"
-  if (filter === "kept") return item.status === "done"
+  if (filter === "kept") return isClosedStatus(item.status)
   if (filter === "promise") return getPinkieKind(item) === "promise"
   return getPinkieKind(item) === "surprise"
 }

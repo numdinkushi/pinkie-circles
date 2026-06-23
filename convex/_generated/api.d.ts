@@ -11,6 +11,7 @@
 import type * as profiles from "../profiles.js";
 import type * as promises from "../promises.js";
 import type * as thanks from "../thanks.js";
+import type * as transactions from "../transactions.js";
 
 import type {
   ApiFromModules,
@@ -22,6 +23,7 @@ declare const fullApi: ApiFromModules<{
   profiles: typeof profiles;
   promises: typeof promises;
   thanks: typeof thanks;
+  transactions: typeof transactions;
 }>;
 
 /**

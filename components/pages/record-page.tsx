@@ -138,7 +138,7 @@ export function RecordPage() {
       ) : (
         <div className="flex flex-col gap-5">
           {items.map((promise) => (
-            <PromiseCard key={promise.slug} promise={promise} />
+            <PromiseCard key={promise.slug} promise={promise} from="record" />
           ))}
         </div>
       )}
