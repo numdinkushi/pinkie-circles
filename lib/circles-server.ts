@@ -6,10 +6,10 @@ const NOT_ON_CIRCLES_MESSAGE =
   "This Pinkie wallet is not active on Circles yet. Your friend may need to use the wallet address from aboutcircles.com instead."
 
 const SETUP_INCOMPLETE_MESSAGE =
-  "This Pinkie playground wallet is not registered on Circles. If your friend signed up on aboutcircles.com, paste that wallet address instead — it is different from the one shown in Pinkie Profile."
+  "This wallet is not on Circles yet. They need an invite from an existing user in the Gnosis app (costs 96 gCRC)."
 
 const ADDRESS_MISMATCH_HINT =
-  "Signing up on aboutcircles.com and connecting in Pinkie creates two different wallets. Always send CRC to the aboutcircles.com wallet address."
+  "After they accept your invite, come back here to send CRC."
 
 function resolveOrgAddress(): string | undefined {
   return (
@@ -143,23 +143,19 @@ export async function ensureOrgTrustsUsers(userAddresses: Address[]): Promise<vo
   }
 }
 
-/** Trust a registered Circles wallet so CRC pathfinding can reach them. */
+/** Set up org trust paths before a CRC send. Does not block on invite quota. */
 export async function ensureRecipientCanReceiveCrc(input: {
   recipient: Address
   sender?: Address
 }): Promise<{ invited: boolean; isHuman: boolean }> {
   const { getAddress } = await import("viem")
   const recipient = getAddress(input.recipient)
-
   const human = await isCirclesHuman(recipient)
-  if (!human) {
-    await registerCirclesHuman(recipient)
-  }
 
   const trustTargets = input.sender ? [recipient, getAddress(input.sender)] : [recipient]
   await ensureOrgTrustsUsers(trustTargets as Address[])
 
-  return { invited: !human, isHuman: true }
+  return { invited: false, isHuman: human }
 }
 
 export { NOT_ON_CIRCLES_MESSAGE, SETUP_INCOMPLETE_MESSAGE, ADDRESS_MISMATCH_HINT }

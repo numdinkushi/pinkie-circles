@@ -76,19 +76,10 @@ export function FinishCirclesSetupCard() {
 
   return (
     <div className="rounded-xl border border-amber-200/80 bg-amber-50/90 px-3 py-3 text-sm text-amber-950">
-      <p className="font-medium">Pinkie wallet ≠ aboutcircles.com wallet</p>
+      <p className="font-medium">Finish Circles setup</p>
       <p className="mt-1 text-xs text-amber-900/80">
-        This address is from the Pinkie playground host only. If you also signed up on{" "}
-        <a
-          href="https://aboutcircles.com/"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="underline underline-offset-2"
-        >
-          aboutcircles.com
-        </a>
-        , your real Circles wallet is different — share that address with friends who want to send
-        you CRC.
+        Your wallet is connected, but Circles has not fully activated it yet. Tap below to retry
+        registration, or complete signup in the Circles app if send still fails.
       </p>
       <Button
         type="button"

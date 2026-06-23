@@ -5,7 +5,6 @@ import {
   isCirclesHuman,
   isPinkieOrgConfigured,
   ADDRESS_MISMATCH_HINT,
-  NOT_ON_CIRCLES_MESSAGE,
   SETUP_INCOMPLETE_MESSAGE,
 } from "@/lib/circles-server"
 
@@ -23,7 +22,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       isHuman,
-      canReceive: isHuman,
+      canReceive: true,
       message: isHuman ? null : SETUP_INCOMPLETE_MESSAGE,
       hint: isHuman ? null : ADDRESS_MISMATCH_HINT,
       orgConfigured: isPinkieOrgConfigured(),

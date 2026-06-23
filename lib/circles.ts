@@ -54,8 +54,41 @@ export function toHostTx(tx: EncodedTx): HostTx {
 }
 
 export async function submitViaHost(txs: EncodedTx[]): Promise<string[]> {
+  if (txs.length === 0) return []
   const { sendTransactions } = await import("@aboutcircles/miniapp-sdk")
   return sendTransactions(txs.map(toHostTx))
+}
+
+async function waitForHostTxs(hashes: string[]) {
+  const valid = hashes.filter((hash) => /^0x[a-fA-F0-9]{64}$/.test(hash))
+  if (valid.length === 0) return
+
+  const { createPublicClient, http } = await import("viem")
+  const { gnosis } = await import("viem/chains")
+  const rpcUrl = process.env.NEXT_PUBLIC_CIRCLES_RPC_URL?.trim() ?? "https://rpc.aboutcircles.com/"
+  const client = createPublicClient({ chain: gnosis, transport: http(rpcUrl) })
+
+  for (const hash of valid) {
+    await client.waitForTransactionReceipt({ hash: hash as `0x${string}` })
+  }
+}
+
+async function isTrustedOnHub(truster: string, trustee: string): Promise<boolean> {
+  const { Core, circlesConfig } = await import("@aboutcircles/sdk-core")
+  const { getAddress } = await import("viem")
+  const core = new Core(circlesConfig[100])
+  return core.hubV2.isTrusted(getAddress(truster), getAddress(trustee))
+}
+
+function formatSendError(error: unknown): string {
+  const message = error instanceof Error ? error.message : String(error)
+  if (/UserOperation reverted|callGasLimit.?0|simulation/i.test(message)) {
+    return "Wallet could not estimate gas for this batch. Pinkie will retry in smaller steps — if it still fails, approve each prompt separately."
+  }
+  if (/No valid transfer path/i.test(message)) {
+    return "No CRC path to this wallet yet. Make sure they accepted your Circles invite, then try again."
+  }
+  return message
 }
 
 export function crcToAmountUnits(amountCrc: number): bigint {
@@ -108,7 +141,6 @@ export async function buildAdvancedCrcTransfer(input: {
   const builder = new TransferBuilder(config)
   const from = getAddress(input.from)
   const to = getAddress(input.to)
-  const org = getOrgAddress()
   const amount = crcToAmountUnits(input.amountCrc)
   const txData = hexToBytes(
     encodeCrcV2TransferData([`Send ${input.amountCrc} CRC`, input.reference], 0x1001),
@@ -118,23 +150,14 @@ export async function buildAdvancedCrcTransfer(input: {
     input.simulatedTrusts?.map((trust) => ({
       truster: getAddress(trust.truster),
       trustee: getAddress(trust.trustee),
-    })) ??
-    [
+    })) ?? [
       { truster: from, trustee: to },
       { truster: to, trustee: from },
-      ...(org
-        ? [
-            { truster: from, trustee: getAddress(org) },
-            { truster: getAddress(org), trustee: from },
-            { truster: getAddress(org), trustee: to },
-            { truster: to, trustee: getAddress(org) },
-          ]
-        : []),
     ]
 
   const rawTxs = await builder.constructAdvancedTransfer(from, to, amount, {
     useWrappedBalances: true,
-    maxTransfers: input.maxTransfers ?? 12,
+    maxTransfers: input.maxTransfers ?? 6,
     fromTokens: [from],
     simulatedTrusts,
     txData,
@@ -163,13 +186,29 @@ async function sendCrcWithTrustSetup(input: {
   await prepareRecipient(input.from, input.to)
 
   const orgAddress = getOrgAddress()
-  const txs: EncodedTx[] = []
+  const trustTxs: EncodedTx[] = []
 
-  if (input.from.toLowerCase() !== input.to.toLowerCase()) {
-    txs.push(await buildTrustTx(input.to, "Trust friend"))
+  if (
+    input.from.toLowerCase() !== input.to.toLowerCase() &&
+    !(await isTrustedOnHub(input.from, input.to))
+  ) {
+    trustTxs.push(await buildTrustTx(input.to, "Trust friend"))
   }
-  if (orgAddress && input.from.toLowerCase() !== orgAddress.toLowerCase()) {
-    txs.push(await buildTrustTx(orgAddress, "Trust org"))
+  if (
+    orgAddress &&
+    input.from.toLowerCase() !== orgAddress.toLowerCase() &&
+    !(await isTrustedOnHub(input.from, orgAddress))
+  ) {
+    trustTxs.push(await buildTrustTx(orgAddress, "Trust org"))
+  }
+
+  const allHashes: string[] = []
+
+  // Batch trust separately — bundling trust + unwrap + send breaks AA gas estimation.
+  if (trustTxs.length > 0) {
+    const trustHashes = await submitViaHost(trustTxs)
+    allHashes.push(...trustHashes)
+    await waitForHostTxs(trustHashes)
   }
 
   const transferTxs = await buildAdvancedCrcTransfer({
@@ -177,13 +216,28 @@ async function sendCrcWithTrustSetup(input: {
     to: input.to,
     amountCrc: input.amountCrc,
     reference: input.reference,
-    maxTransfers: 12,
+    maxTransfers: 6,
     label: "Send CRC",
     description: input.description ?? `Send ${input.amountCrc} CRC`,
   })
-  txs.push(...transferTxs)
 
-  return submitViaHost(txs)
+  try {
+    const transferHashes = await submitViaHost(transferTxs)
+    allHashes.push(...transferHashes)
+    return allHashes
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    if (transferTxs.length <= 1 || !/UserOperation reverted|simulation|callGasLimit/i.test(message)) {
+      throw new Error(formatSendError(error))
+    }
+
+    for (const tx of transferTxs) {
+      const stepHashes = await submitViaHost([tx])
+      allHashes.push(...stepHashes)
+      await waitForHostTxs(stepHashes)
+    }
+    return allHashes
+  }
 }
 
 export async function sendThanks(input: {

@@ -43,14 +43,7 @@ export function SendCrcForm({ fromAddress, className }: SendCrcFormProps) {
   const amountCrc = Number.parseFloat(amount)
   const amountValid = Number.isFinite(amountCrc) && amountCrc > 0
   const insufficientBalance = amountValid && numeric < amountCrc
-  const recipientReady = recipientCheck.canReceive === true
-  const canSend =
-    !!recipientAddress &&
-    amountValid &&
-    !insufficientBalance &&
-    !sending &&
-    recipientReady &&
-    !recipientCheck.loading
+  const canSend = !!recipientAddress && amountValid && !insufficientBalance && !sending
 
   useEffect(() => {
     if (!recipientAddress) {
@@ -71,22 +64,22 @@ export function SendCrcForm({ fromAddress, className }: SendCrcFormProps) {
         if (cancelled) return
         setRecipientCheck({
           loading: false,
-          canReceive: res.ok ? !!data.canReceive : false,
+          canReceive: res.ok ? data.canReceive !== false : true,
           message:
-            typeof data.message === "string"
+            typeof data.message === "string" && !data.isHuman
               ? data.message
               : typeof data.error === "string"
                 ? data.error
                 : null,
-          hint: typeof data.hint === "string" ? data.hint : null,
+          hint: typeof data.hint === "string" && !data.isHuman ? data.hint : null,
         })
       })
       .catch(() => {
         if (cancelled) return
         setRecipientCheck({
           loading: false,
-          canReceive: false,
-          message: "Could not verify this wallet on Circles.",
+          canReceive: true,
+          message: null,
           hint: null,
         })
       })
@@ -100,8 +93,8 @@ export function SendCrcForm({ fromAddress, className }: SendCrcFormProps) {
     try {
       const text = await navigator.clipboard.readText()
       setRecipient(text.trim())
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Could not paste from clipboard")
+    } catch {
+      toast.error("Paste blocked here — long-press the field and tap Paste instead.")
     }
   }
 
@@ -183,19 +176,16 @@ export function SendCrcForm({ fromAddress, className }: SendCrcFormProps) {
           {recipientAddress && recipientCheck.loading ? (
             <p className="text-xs text-violet-700/60">Checking Circles wallet…</p>
           ) : null}
-          {recipientAddress && !recipientCheck.loading && recipientCheck.canReceive === false ? (
-            <div className="space-y-1">
-              <p className="text-xs text-rose-600">
-                {recipientCheck.message ??
-                  "This wallet is not active on Circles yet. Ask your friend to share their aboutcircles.com address."}
-              </p>
+          {recipientAddress && !recipientCheck.loading && recipientCheck.message ? (
+            <div className="space-y-1 rounded-lg border border-amber-200/80 bg-amber-50/90 px-2.5 py-2">
+              <p className="text-xs text-amber-900">{recipientCheck.message}</p>
               {recipientCheck.hint ? (
-                <p className="text-xs text-violet-700/70">{recipientCheck.hint}</p>
+                <p className="text-xs text-amber-800/80">{recipientCheck.hint}</p>
               ) : null}
             </div>
           ) : null}
-          {recipientAddress && !recipientCheck.loading && recipientCheck.canReceive ? (
-            <p className="text-xs text-emerald-700">Circles wallet found — ready to receive CRC.</p>
+          {recipientAddress && !recipientCheck.loading && !recipientCheck.message ? (
+            <p className="text-xs text-emerald-700">Address looks good — ready to send.</p>
           ) : null}
         </div>
 
@@ -233,8 +223,7 @@ export function SendCrcForm({ fromAddress, className }: SendCrcFormProps) {
         </div>
 
         <p className="text-xs text-violet-700/60">
-          Use the wallet address from your friend&apos;s aboutcircles.com profile (Profile → wallet
-          address). It may differ from the address shown in Pinkie.
+          You may see two wallet prompts — trust setup first, then the CRC send. Approve each one.
         </p>
 
         <Button
