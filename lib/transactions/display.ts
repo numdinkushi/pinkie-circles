@@ -5,10 +5,10 @@ export type WalletTransaction = {
   direction: TransactionDirection
   counterparty: string
   amountCrc: number
-  promiseSlug: string
-  promiseKind: "promise" | "surprise"
+  promiseSlug?: string
+  promiseKind?: "promise" | "surprise"
   promiseText?: string
-  action: "thanks"
+  action: "thanks" | "transfer"
   txHashes?: string[]
   createdAt: number
 }
@@ -19,6 +19,7 @@ export function directionLabel(direction: TransactionDirection) {
 
 export function actionLabel(action: WalletTransaction["action"]) {
   if (action === "thanks") return "CRC thanks"
+  if (action === "transfer") return "CRC transfer"
   return action
 }
 

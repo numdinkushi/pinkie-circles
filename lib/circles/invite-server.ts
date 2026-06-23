@@ -127,7 +127,7 @@ export async function inviteAccountToCircles(
 ): Promise<InviteResult> {
   const { getAddress } = await import("viem")
   const { circlesConfig } = await import("@aboutcircles/sdk-core")
-  const { Invitations } = await import("@aboutcircles/sdk-invitations")
+  const { InviteFarm } = await import("@aboutcircles/sdk-invitations")
   const { SafeContractRunner, chains } = await import("@aboutcircles/sdk-runner")
 
   const target = getAddress(invitee)
@@ -142,12 +142,25 @@ export async function inviteAccountToCircles(
   if (!baseConfig) throw new Error("No Circles config for chain 100")
 
   const config = { ...baseConfig, invitationFarmAddress: env.invitationFarm }
-  const invitations = new Invitations(config)
+  const farm = new InviteFarm(config)
+
+  const quota = await farm.getQuota(env.inviterSafe).catch((err) => {
+    if (log) inviteLogError(log, "farm_quota_failed", err, { inviterSafe: env.inviterSafe })
+    return BigInt(0)
+  })
+
+  if (quota <= BigInt(0)) {
+    throw new Error(
+      "Pinkie cannot register new wallets right now — the org has no InvitationFarm quota. " +
+        "Fund the IQlify org Safe or ask an admin to assign invite quota, then tap Connect again.",
+    )
+  }
 
   let transactions
   try {
-    if (log) inviteLog(log, "info", "generate_invite_start", { invitee: target })
-    transactions = await invitations.generateInvite(env.inviterSafe, target)
+    if (log) inviteLog(log, "info", "generate_invite_start", { invitee: target, quota: quota.toString() })
+    const result = await farm.generateInvites(env.inviterSafe, [target])
+    transactions = result.transactions
     if (log) {
       inviteLog(log, "info", "generate_invite_ok", {
         invitee: target,
@@ -158,7 +171,7 @@ export async function inviteAccountToCircles(
     const message = err instanceof Error ? err.message : String(err)
     if (/already.*regist/i.test(message)) {
       if (log) inviteLog(log, "info", "invitee_already_registered", { invitee: target })
-      return { status: "already", invitee: target }
+      return { status: "already", invitee: target, quotaRemaining: quota.toString() }
     }
     if (log) inviteLogError(log, "generate_invite_failed", err, { invitee: target })
     throw err
@@ -166,14 +179,7 @@ export async function inviteAccountToCircles(
 
   if (!transactions?.length) {
     if (log) inviteLog(log, "info", "no_transactions_already_registered", { invitee: target })
-    return { status: "already", invitee: target }
-  }
-
-  if (log) {
-    inviteLog(log, "info", "runner_create_start", {
-      inviterSafe: env.inviterSafe,
-      rpcUrl: env.rpcUrl,
-    })
+    return { status: "already", invitee: target, quotaRemaining: quota.toString() }
   }
 
   const runner = await SafeContractRunner.create(
@@ -203,6 +209,7 @@ export async function inviteAccountToCircles(
     status: "invited",
     invitee: target,
     txHash: receipt.transactionHash,
+    quotaRemaining: (quota - BigInt(1)).toString(),
   }
 }
 

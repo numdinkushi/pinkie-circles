@@ -80,6 +80,38 @@ export const recordThanks = mutation({
   },
 })
 
+export const recordTransfer = mutation({
+  args: {
+    fromAddress: v.string(),
+    toAddress: v.string(),
+    amountCrc: v.number(),
+    note: v.optional(v.string()),
+    txHashes: v.optional(v.array(v.string())),
+  },
+  handler: async (ctx, args) => {
+    const from = normalizeAddress(args.fromAddress)
+    const to = normalizeAddress(args.toAddress)
+    const note = args.note?.trim() || undefined
+
+    if (from === to) {
+      throw new Error("You cannot send CRC to yourself.")
+    }
+    if (args.amountCrc <= 0) {
+      throw new Error("Amount must be greater than zero.")
+    }
+
+    return ctx.db.insert("transactions", {
+      fromAddress: from,
+      toAddress: to,
+      amountCrc: args.amountCrc,
+      action: "transfer",
+      feedback: note,
+      txHashes: args.txHashes,
+      createdAt: Date.now(),
+    })
+  },
+})
+
 export const listForWallet = query({
   args: { address: v.string() },
   handler: async (ctx, args) => {
@@ -94,7 +126,11 @@ export const listForWallet = query({
       .withIndex("by_to", (q) => q.eq("toAddress", me))
       .collect()
 
-    const slugs = new Set([...sent, ...received].map((row) => row.promiseSlug))
+    const slugs = new Set(
+      [...sent, ...received]
+        .map((row) => row.promiseSlug)
+        .filter((slug): slug is string => !!slug),
+    )
     const promiseTexts = new Map<string, string>()
     for (const slug of slugs) {
       const promise = await ctx.db
@@ -109,10 +145,10 @@ export const listForWallet = query({
       direction: "debit" | "credit"
       counterparty: string
       amountCrc: number
-      promiseSlug: string
-      promiseKind: "promise" | "surprise"
+      promiseSlug?: string
+      promiseKind?: "promise" | "surprise"
       promiseText?: string
-      action: "thanks"
+      action: "thanks" | "transfer"
       txHashes?: string[]
       createdAt: number
     }
@@ -125,7 +161,7 @@ export const listForWallet = query({
         amountCrc: row.amountCrc,
         promiseSlug: row.promiseSlug,
         promiseKind: row.promiseKind,
-        promiseText: promiseTexts.get(row.promiseSlug),
+        promiseText: row.promiseSlug ? promiseTexts.get(row.promiseSlug) : undefined,
         action: row.action,
         txHashes: row.txHashes,
         createdAt: row.createdAt,
@@ -137,7 +173,7 @@ export const listForWallet = query({
         amountCrc: row.amountCrc,
         promiseSlug: row.promiseSlug,
         promiseKind: row.promiseKind,
-        promiseText: promiseTexts.get(row.promiseSlug),
+        promiseText: row.promiseSlug ? promiseTexts.get(row.promiseSlug) : undefined,
         action: row.action,
         txHashes: row.txHashes,
         createdAt: row.createdAt,

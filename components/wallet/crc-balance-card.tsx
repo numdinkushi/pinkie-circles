@@ -63,7 +63,10 @@ export function CrcBalanceCard({ address, compact, className }: CrcBalanceCardPr
             <p className="text-sm text-violet-800/70">{circlesName}</p>
           ) : null}
         </div>
-        <WalletAddressCopy address={resolvedAddress} />
+        <WalletAddressCopy
+          address={resolvedAddress}
+          description="Pinkie playground wallet. If you also use aboutcircles.com, that app has a different address — share that one to receive CRC."
+        />
 
         <Button type="button" variant="outline" size="sm" onClick={() => void refresh()} disabled={loading}>
           {loading ? <LoaderCircle className="animate-spin" /> : <RefreshCw />}

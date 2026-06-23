@@ -7,6 +7,7 @@ import { toast } from "sonner"
 import { AvatarUpload } from "@/components/profile/avatar-upload"
 import { CreateAccountButton } from "@/components/wallet/create-account-button"
 import { CrcBalanceCard } from "@/components/wallet/crc-balance-card"
+import { FinishCirclesSetupCard } from "@/components/wallet/finish-circles-setup-card"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -55,6 +56,7 @@ export function ProfilePage() {
       </div>
 
       <CrcBalanceCard address={address} />
+      <FinishCirclesSetupCard />
 
       <AvatarUpload address={address} />
 

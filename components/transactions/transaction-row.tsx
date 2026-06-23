@@ -63,10 +63,12 @@ export function TransactionRow({ transaction }: TransactionRowProps) {
                   "shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium",
                   transaction.promiseKind === "surprise"
                     ? "bg-fuchsia-50 text-fuchsia-700"
-                    : "bg-pink-50 text-pink-700",
+                    : transaction.promiseKind === "promise"
+                      ? "bg-pink-50 text-pink-700"
+                      : "bg-violet-50 text-violet-700",
                 )}
               >
-                {kindLabel(transaction.promiseKind)}
+                {transaction.promiseKind ? kindLabel(transaction.promiseKind) : "Direct"}
               </span>
             </div>
 
@@ -83,7 +85,7 @@ export function TransactionRow({ transaction }: TransactionRowProps) {
               </span>
             </div>
 
-            {transaction.promiseText ? (
+            {transaction.promiseText && transaction.promiseSlug ? (
               <Link
                 href={promiseDetailPath(transaction.promiseSlug, "transactions")}
                 className="block truncate text-xs text-violet-700 underline-offset-2 hover:underline"
