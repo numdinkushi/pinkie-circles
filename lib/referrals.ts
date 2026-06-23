@@ -36,7 +36,12 @@ export function clearReferralSecret() {
 }
 
 export function buildAppPath(path: string, params?: Record<string, string>) {
-  const origin = process.env.NEXT_PUBLIC_APP_URL ?? window.location.origin
+  const origin =
+    process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "") ??
+    (typeof window !== "undefined" ? window.location.origin.replace(/\/$/, "") : "")
+  if (!origin) {
+    throw new Error("NEXT_PUBLIC_APP_URL is required to build app links.")
+  }
   const url = new URL(path.replace(/^\//, ""), `${origin.replace(/\/$/, "")}/`)
   if (params) {
     for (const [key, value] of Object.entries(params)) {
@@ -62,6 +67,11 @@ export function wrapInCirclesPlayground(appUrl: string) {
   const hostBase =
     process.env.NEXT_PUBLIC_CIRCLES_HOST_URL ?? "https://circles.gnosis.io/playground"
   return `${hostBase.replace(/\/$/, "")}?url=${encodeURIComponent(appUrl)}`
+}
+
+/** Opens Pinkie inside the Circles playground (wallet connect works there). */
+export function buildPlaygroundEntryUrl(path = "/") {
+  return wrapInCirclesPlayground(buildAppPath(path))
 }
 
 /** Copy-paste link for sharing a promise inside the Circles host. */

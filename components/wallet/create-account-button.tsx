@@ -5,6 +5,7 @@ import { LoaderCircle } from "lucide-react"
 import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
+import { OpenInPlaygroundButton } from "@/components/wallet/open-in-playground-button"
 import { useWallet } from "@/components/wallet/wallet-provider"
 
 type MiniappSdk = typeof import("@aboutcircles/miniapp-sdk")
@@ -53,9 +54,10 @@ export function CreateAccountButton({
 
   if (!isMiniappHost) {
     return (
-      <p className="text-sm text-muted-foreground">
-        Open inside the Circles app to connect your wallet.
-      </p>
+      <OpenInPlaygroundButton
+        compact={compact}
+        label={compact ? "Open in Circles" : "Open in Circles Playground"}
+      />
     )
   }
 
